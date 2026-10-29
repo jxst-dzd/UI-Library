@@ -1,10 +1,10 @@
 --[[
-	Mellow UI (v1.2.0 - Acrylic Glass & Axon Style)
-	A modern, high-performance Roblox UI library with real acrylic blur,
-	multi-column collapsible cards, user profile widget, header search,
-	item action rows, and macOS traffic lights.
-
-	Inspired by Fluent and Axon Hub.
+	MellowUI (Fusion Edition - Maclib x Fluent)
+	The ultimate Roblox UI library fusing:
+	  • Maclib (macOS sidebar, tab groups, global settings flyout, user profile, 2-column sections)
+	  • Fluent (acrylic glass blur, Lucide icons, spring motion, SaveManager compatibility)
+	  • Axon Hub aesthetic (topographic contour watermark, collapsible cards, pet/item rows)
+	  • Mellow Hub brand palette (deep ocean gradient, cyan/teal accent, hot pink action pills)
 ]]
 
 local Players = game:GetService("Players")
@@ -18,7 +18,7 @@ local LocalPlayer = Players.LocalPlayer
 assert(LocalPlayer, "[MellowUI] must run on the client (LocalScript / executor).")
 
 local Library = {
-	Version = "1.2.0",
+	Version = "2.0.0 (Fusion Edition)",
 
 	Options = {},
 	Themes = {},
@@ -27,13 +27,13 @@ local Library = {
 
 	Window = nil,
 	Unloaded = false,
+	onUnloadedCallbacks = {},
 
 	Theme = "Mellow",
 	DialogOpen = false,
 	UseAcrylic = true,
-	Acrylic = true,
-	Transparency = false,
-	MinimizeKeybind = nil,
+	NotificationsEnabled = true,
+	ShowUserInfo = true,
 	MinimizeKey = Enum.KeyCode.RightControl,
 
 	GUI = nil,
@@ -64,10 +64,12 @@ local Assets = {
 	SatVibMap = "rbxassetid://4155801252",
 	PickerRing = "rbxassetid://4805639000",
 	Noise = "rbxassetid://9968344105",
-	ContourWaves = "rbxassetid://13854659424", -- Wavy topographic watermark texture
+	ContourWaves = "rbxassetid://13854659424",
 	Search = "rbxassetid://10734943674",
-	UserDefault = "rbxassetid://10747373176",
+	SettingsIcon = "rbxassetid://10734950309",
+	Sliders = "rbxassetid://10734963400",
 	Box = "rbxassetid://10709782497",
+	UserDefault = "rbxassetid://10747373176",
 }
 
 local Icons = {
@@ -91,7 +93,6 @@ local Icons = {
 	["flame"] = "rbxassetid://10723376114",
 	["folder"] = "rbxassetid://10723387563",
 	["gamepad-2"] = "rbxassetid://10723395215",
-	["ghost"] = "rbxassetid://10734897102",
 	["globe"] = "rbxassetid://10723404337",
 	["halloween"] = "rbxassetid://10723376114",
 	["heart"] = "rbxassetid://10723406885",
@@ -142,7 +143,7 @@ local Icons = {
 }
 
 --------------------------------------------------------------------------------
--- Themes
+-- Theme Palettes
 --------------------------------------------------------------------------------
 
 local function Gradient(From, To)
@@ -156,16 +157,19 @@ local ThemeList = {
 	{
 		Name = "Mellow",
 		Accent = Color3.fromRGB(104, 170, 208),
-		PinkAccent = Color3.fromRGB(244, 63, 94), -- Vibrant pink for steal / action buttons
+		PinkAccent = Color3.fromRGB(244, 63, 94),
 
 		BackgroundGradient = Gradient(Color3.fromRGB(15, 32, 42), Color3.fromRGB(8, 14, 18)),
 		WindowBorder = Color3.fromRGB(48, 82, 101),
 		Pattern = Color3.fromRGB(62, 104, 128),
 		PatternTransparency = 0.88,
 
+		SidebarBackground = Color3.fromRGB(12, 23, 31),
+		SidebarBorder = Color3.fromRGB(34, 58, 74),
 		TitleBarLine = Color3.fromRGB(36, 62, 78),
+
 		Tab = Color3.fromRGB(120, 170, 200),
-		TabActive = Color3.fromRGB(25, 48, 62),
+		TabActive = Color3.fromRGB(24, 46, 60),
 
 		CardBackground = Color3.fromRGB(14, 27, 36),
 		CardBorder = Color3.fromRGB(34, 58, 74),
@@ -176,7 +180,7 @@ local ThemeList = {
 		ElementTransparency = 0.88,
 
 		ToggleSlider = Color3.fromRGB(125, 165, 190),
-		ToggleToggled = Color3.fromRGB(244, 63, 94), -- Pink toggled thumb as in screenshot
+		ToggleToggled = Color3.fromRGB(244, 63, 94),
 
 		SliderRail = Color3.fromRGB(115, 155, 180),
 
@@ -200,59 +204,62 @@ local ThemeList = {
 
 		Text = Color3.fromRGB(240, 245, 248),
 		SubText = Color3.fromRGB(145, 170, 185),
-		Success = Color3.fromRGB(52, 211, 153), -- Pet income green
+		Success = Color3.fromRGB(52, 211, 153),
 		Hover = Color3.fromRGB(120, 170, 200),
 		HoverChange = 0.05,
 	},
 	{
-		Name = "AxonDark",
+		Name = "MacDark",
 		Accent = Color3.fromRGB(56, 189, 248),
 		PinkAccent = Color3.fromRGB(244, 63, 94),
 
-		BackgroundGradient = Gradient(Color3.fromRGB(11, 19, 26), Color3.fromRGB(5, 9, 13)),
-		WindowBorder = Color3.fromRGB(28, 48, 62),
-		Pattern = Color3.fromRGB(44, 74, 92),
+		BackgroundGradient = Gradient(Color3.fromRGB(18, 18, 18), Color3.fromRGB(10, 10, 10)),
+		WindowBorder = Color3.fromRGB(50, 50, 50),
+		Pattern = Color3.fromRGB(60, 60, 60),
 		PatternTransparency = 0.92,
 
-		TitleBarLine = Color3.fromRGB(24, 40, 52),
-		Tab = Color3.fromRGB(90, 130, 155),
-		TabActive = Color3.fromRGB(18, 32, 42),
+		SidebarBackground = Color3.fromRGB(14, 14, 14),
+		SidebarBorder = Color3.fromRGB(40, 40, 40),
+		TitleBarLine = Color3.fromRGB(40, 40, 40),
 
-		CardBackground = Color3.fromRGB(9, 16, 22),
-		CardBorder = Color3.fromRGB(24, 42, 54),
+		Tab = Color3.fromRGB(160, 160, 160),
+		TabActive = Color3.fromRGB(30, 30, 30),
 
-		Element = Color3.fromRGB(80, 120, 145),
-		ElementBorder = Color3.fromRGB(18, 32, 42),
-		InElementBorder = Color3.fromRGB(45, 70, 88),
-		ElementTransparency = 0.90,
+		CardBackground = Color3.fromRGB(16, 16, 16),
+		CardBorder = Color3.fromRGB(40, 40, 40),
 
-		ToggleSlider = Color3.fromRGB(110, 150, 175),
-		ToggleToggled = Color3.fromRGB(244, 63, 94),
+		Element = Color3.fromRGB(120, 120, 120),
+		ElementBorder = Color3.fromRGB(32, 32, 32),
+		InElementBorder = Color3.fromRGB(60, 60, 60),
+		ElementTransparency = 0.88,
 
-		SliderRail = Color3.fromRGB(95, 135, 160),
+		ToggleSlider = Color3.fromRGB(140, 140, 140),
+		ToggleToggled = Color3.fromRGB(56, 189, 248),
 
-		DropdownFrame = Color3.fromRGB(120, 160, 185),
-		DropdownHolder = Color3.fromRGB(8, 14, 20),
-		DropdownBorder = Color3.fromRGB(28, 48, 62),
-		DropdownOption = Color3.fromRGB(100, 140, 165),
+		SliderRail = Color3.fromRGB(130, 130, 130),
 
-		Keybind = Color3.fromRGB(100, 140, 165),
+		DropdownFrame = Color3.fromRGB(150, 150, 150),
+		DropdownHolder = Color3.fromRGB(18, 18, 18),
+		DropdownBorder = Color3.fromRGB(45, 45, 45),
+		DropdownOption = Color3.fromRGB(130, 130, 130),
 
-		Input = Color3.fromRGB(120, 160, 185),
-		InputFocused = Color3.fromRGB(4, 8, 12),
+		Keybind = Color3.fromRGB(130, 130, 130),
+
+		Input = Color3.fromRGB(150, 150, 150),
+		InputFocused = Color3.fromRGB(8, 8, 8),
 		InputIndicator = Color3.fromRGB(56, 189, 248),
 
-		Dialog = Color3.fromRGB(8, 14, 20),
-		DialogHolder = Color3.fromRGB(6, 10, 14),
-		DialogHolderLine = Color3.fromRGB(20, 34, 44),
-		DialogButton = Color3.fromRGB(14, 26, 36),
-		DialogButtonBorder = Color3.fromRGB(36, 60, 78),
-		DialogBorder = Color3.fromRGB(32, 54, 70),
+		Dialog = Color3.fromRGB(18, 18, 18),
+		DialogHolder = Color3.fromRGB(12, 12, 12),
+		DialogHolderLine = Color3.fromRGB(30, 30, 30),
+		DialogButton = Color3.fromRGB(24, 24, 24),
+		DialogButtonBorder = Color3.fromRGB(55, 55, 55),
+		DialogBorder = Color3.fromRGB(45, 45, 45),
 
-		Text = Color3.fromRGB(240, 245, 248),
-		SubText = Color3.fromRGB(130, 155, 170),
+		Text = Color3.fromRGB(240, 240, 240),
+		SubText = Color3.fromRGB(160, 160, 160),
 		Success = Color3.fromRGB(52, 211, 153),
-		Hover = Color3.fromRGB(100, 140, 165),
+		Hover = Color3.fromRGB(130, 130, 130),
 		HoverChange = 0.05,
 	},
 }
@@ -263,7 +270,7 @@ for _, Theme in ThemeList do
 end
 
 --------------------------------------------------------------------------------
--- Creator Factory & Theme Registry
+-- Creator Factory
 --------------------------------------------------------------------------------
 
 local Creator = {
@@ -469,9 +476,8 @@ function Library:SafeCallback(Function, ...)
 		local Msg = tostring(Event)
 		Library:Notify({
 			Title = "Error",
-			Content = "Callback error",
-			SubContent = Msg,
-			Duration = 5,
+			Description = Msg,
+			Lifetime = 5,
 		})
 	end
 end
@@ -515,7 +521,6 @@ end
 
 --------------------------------------------------------------------------------
 -- Acrylic Glass Blur Engine
--- Real glass reflection + DepthOfField in Lighting
 --------------------------------------------------------------------------------
 
 local AcrylicEngine = {
@@ -546,7 +551,6 @@ function AcrylicEngine:Init()
 	AcrylicEngine.Folder.Name = "MellowAcrylicBlur"
 	AcrylicEngine.Folder.Parent = Camera
 
-	-- Glass MeshPart
 	local Part = Instance.new("Part")
 	Part.Name = "GlassMesh"
 	Part.Color = Color3.new(0, 0, 0)
@@ -562,11 +566,9 @@ function AcrylicEngine:Init()
 	Mesh.MeshType = Enum.MeshType.Brick
 	Mesh.Offset = Vector3.new(0, 0, -0.000001)
 	Mesh.Parent = Part
-
 	Part.Parent = AcrylicEngine.Folder
 	AcrylicEngine.Model = Part
 
-	-- Lighting DepthOfField
 	local Effect = Lighting:FindFirstChild("MellowAcrylic_DOF")
 	if not Effect then
 		Effect = Instance.new("DepthOfFieldEffect")
@@ -627,16 +629,19 @@ end
 
 if typeof(getgenv) == "function" then
 	local Env = getgenv()
-	local Previous = Env.MellowUI
+	local Previous = Env.MellowUI or Env.MacLib or Env.Fluent
 	if type(Previous) == "table" and Previous ~= Library and type(Previous.Destroy) == "function" then
 		pcall(Previous.Destroy, Previous)
 	end
 	Env.MellowUI = Library
+	Env.MacLib = Library
+	Env.Fluent = Library
 end
 
 local GUI = New("ScreenGui", {
-	Name = "MellowUI",
-	DisplayOrder = 999,
+	Name = "MacLib_MellowUI",
+	DisplayOrder = 100,
+	ResetOnSpawn = false,
 })
 Library.GUI = GUI
 
@@ -666,157 +671,71 @@ local function GetViewportSize()
 end
 
 --------------------------------------------------------------------------------
--- Window Paint: Glass Background + Topographic Waves + Border
---------------------------------------------------------------------------------
-
-local Paints = {}
-
-local function CreatePaint()
-	local Paint = {}
-
-	-- Wavy contour watermark lines overlay (Axon Hub aesthetic)
-	local WaveContour = New("ImageLabel", {
-		Name = "WaveContour",
-		Image = Assets.ContourWaves,
-		Size = UDim2.fromScale(1, 1),
-		Position = UDim2.fromScale(0, 0),
-		ImageTransparency = 0.88,
-		ImageColor3 = Color3.fromRGB(104, 170, 208),
-		ScaleType = Enum.ScaleType.Crop,
-		BackgroundTransparency = 1,
-		ZIndex = 2,
-	}, {
-		New("UICorner", {
-			CornerRadius = UDim.new(0, 10),
-		}),
-	})
-
-	Paint.Background = New("Frame", {
-		Name = "GlassBackground",
-		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		BackgroundTransparency = 0.15, -- Frosted translucent glass
-		ZIndex = 1,
-	}, {
-		New("UICorner", {
-			CornerRadius = UDim.new(0, 10),
-		}),
-		New("UIGradient", {
-			Rotation = -45,
-			ThemeTag = {
-				Color = "BackgroundGradient",
-			},
-		}),
-		WaveContour,
-	})
-
-	Paint.Frame = New("Frame", {
-		Name = "PaintFrame",
-		Size = UDim2.fromScale(1, 1),
-		BackgroundTransparency = 1,
-		ZIndex = 1,
-	}, {
-		New("ImageLabel", {
-			Name = "DropShadow",
-			Image = Assets.Shadow,
-			ScaleType = Enum.ScaleType.Slice,
-			SliceCenter = Rect.new(99, 99, 99, 99),
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Size = UDim2.new(1, 120, 1, 116),
-			Position = UDim2.fromScale(0.5, 0.5),
-			ImageColor3 = Color3.new(0, 0, 0),
-			ImageTransparency = 0.55,
-			ZIndex = 0,
-		}),
-		Paint.Background,
-		New("Frame", {
-			Name = "GlassStroke",
-			Size = UDim2.fromScale(1, 1),
-			BackgroundTransparency = 1,
-			ZIndex = 5,
-		}, {
-			New("UICorner", {
-				CornerRadius = UDim.new(0, 10),
-			}),
-			New("UIStroke", {
-				Transparency = 0.45,
-				Thickness = 1,
-				ThemeTag = {
-					Color = "WindowBorder",
-				},
-			}),
-		}),
-	})
-
-	Paints[Paint.Background] = true
-	return Paint
-end
-
---------------------------------------------------------------------------------
--- Toast Notifications
+-- Toast Notifications (Maclib & Fluent Compatible)
 --------------------------------------------------------------------------------
 
 local Notification = {}
 
 function Notification:Init(Parent)
 	Notification.Holder = New("Frame", {
-		Name = "NotificationStack",
-		Position = UDim2.new(1, -25, 1, -25),
-		Size = UDim2.new(0, 310, 1, -25),
+		Name = "Notifications",
+		Position = UDim2.new(1, -20, 1, -20),
+		Size = UDim2.new(0, 310, 1, -20),
 		AnchorPoint = Vector2.new(1, 1),
 		BackgroundTransparency = 1,
-		ZIndex = 100,
+		ZIndex = 200,
 		Parent = Parent,
 	}, {
 		New("UIListLayout", {
-			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			HorizontalAlignment = Enum.HorizontalAlignment.Right,
 			SortOrder = Enum.SortOrder.LayoutOrder,
 			VerticalAlignment = Enum.VerticalAlignment.Bottom,
-			Padding = UDim.new(0, 10),
+			Padding = UDim.new(0, 8),
 		}),
 	})
 end
 
 function Notification:New(Config)
+	if not Library.NotificationsEnabled then return end
 	Config = Config or {}
-	local Content = Config.Content or ""
-	local SubContent = Config.SubContent or ""
-	local Duration = tonumber(Config.Duration) or 5
+	local Title = Config.Title or Config.Header or "Notification"
+	local Desc = Config.Description or Config.Content or Config.Body or ""
+	local Lifetime = tonumber(Config.Lifetime or Config.Duration or 5)
 
 	local Toast = { Closed = false }
 
 	local Frame = New("Frame", {
-		Size = UDim2.new(1, 0, 0, 60),
+		Size = UDim2.new(1, 0, 0, 58),
 		BackgroundColor3 = Color3.fromRGB(15, 28, 38),
 		BackgroundTransparency = 0.1,
-		ZIndex = 100,
+		ZIndex = 200,
 		LayoutOrder = NextLayoutOrder(),
 		Parent = Notification.Holder,
 	}, {
 		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
-		New("UIStroke", { Transparency = 0.4, ThemeTag = { Color = "WindowBorder" } }),
+		New("UIStroke", { Transparency = 0.45, ThemeTag = { Color = "WindowBorder" } }),
 		New("Frame", {
 			Size = UDim2.fromOffset(3, 16),
 			Position = UDim2.fromOffset(12, 12),
 			ThemeTag = { BackgroundColor3 = "Accent" },
 		}, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) }),
 		New("TextLabel", {
-			Text = Config.Title or "Notification",
+			Text = Title,
 			FontFace = Fonts.SemiBold,
 			TextSize = 13,
 			TextXAlignment = Enum.TextXAlignment.Left,
-			Position = UDim2.fromOffset(22, 12),
+			Position = UDim2.fromOffset(22, 11),
 			Size = UDim2.new(1, -50, 0, 16),
 			ThemeTag = { TextColor3 = "Text" },
 		}),
 		New("TextLabel", {
-			Text = Content,
+			Text = Desc,
 			FontFace = Fonts.Regular,
 			TextSize = 12,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			TextWrapped = true,
-			Position = UDim2.fromOffset(22, 30),
-			Size = UDim2.new(1, -34, 0, 20),
+			Position = UDim2.fromOffset(22, 28),
+			Size = UDim2.new(1, -34, 0, 22),
 			ThemeTag = { TextColor3 = "SubText" },
 		}),
 	})
@@ -836,13 +755,13 @@ function Notification:New(Config)
 		}, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) }),
 	})
 
-	Tween(ProgressBar.Fill, Duration, { Size = UDim2.fromScale(0, 1) }, Enum.EasingStyle.Linear)
+	Tween(ProgressBar.Fill, Lifetime, { Size = UDim2.fromScale(0, 1) }, Enum.EasingStyle.Linear)
 
-	task.delay(Duration, function()
+	task.delay(Lifetime, function()
 		if not Toast.Closed then
 			Toast.Closed = true
-			Tween(Frame, 0.3, { BackgroundTransparency = 1 })
-			task.delay(0.35, function() Frame:Destroy() end)
+			Tween(Frame, 0.25, { BackgroundTransparency = 1 })
+			task.delay(0.3, function() Frame:Destroy() end)
 		end
 	end)
 
@@ -856,294 +775,304 @@ function Library:Notify(Config)
 end
 
 --------------------------------------------------------------------------------
--- Interactive Components Builder (Collapsible Cards, Rows, Toggles, etc.)
+-- Modal Dialog
 --------------------------------------------------------------------------------
 
-local Elements = {}
+local Dialog = {}
 
--- 1. Collapsible GroupBox / Card (Axon Hub Style)
-function Elements:AddCard(Title, Config)
+function Dialog:Create(Parent, Config)
 	Config = Config or {}
-	local Collapsible = Config.Collapsible ~= false
-	local Collapsed = Config.DefaultCollapsed or false
+	local Title = Config.Title or "Dialog"
+	local Desc = Config.Description or Config.Content or ""
+	local Buttons = Config.Buttons or { { Name = "Confirm" }, { Name = "Cancel" } }
 
-	local Card = {
-		Title = Title,
-		Collapsed = Collapsed,
-		Children = {},
-		Type = "Card",
-	}
+	Library.DialogOpen = true
 
-	local ContentLayout = New("UIListLayout", {
-		Padding = UDim.new(0, 6),
-		SortOrder = Enum.SortOrder.LayoutOrder,
+	local Tint = New("TextButton", {
+		Name = "DialogTint",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+		BackgroundTransparency = 1,
+		Text = "",
+		ZIndex = 150,
+		Parent = Parent,
+	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
 	})
 
-	local CardContent = New("Frame", {
-		Name = "CardContent",
-		Size = UDim2.new(1, 0, 0, 0),
-		Position = UDim2.fromOffset(0, 38),
+	local ButtonHolder = New("Frame", {
+		Size = UDim2.new(1, -30, 0, 36),
+		Position = UDim2.new(0, 15, 1, -48),
 		BackgroundTransparency = 1,
-		AutomaticSize = Enum.AutomaticSize.Y,
-		ClipsDescendants = true,
 	}, {
-		ContentLayout,
-		New("UIPadding", {
-			PaddingLeft = UDim.new(0, 10),
-			PaddingRight = UDim.new(0, 10),
-			PaddingBottom = UDim.new(0, 10),
+		New("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			Padding = UDim.new(0, 8),
+			HorizontalAlignment = Enum.HorizontalAlignment.Right,
 		}),
 	})
 
-	local Chevron = New("ImageLabel", {
-		Image = Assets.ChevronDown,
-		Size = UDim2.fromOffset(16, 16),
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -12, 0.5, 0),
-		BackgroundTransparency = 1,
-		Visible = Collapsible,
-		ThemeTag = { ImageColor3 = "SubText" },
-	})
-
-	local CardHeader = New("TextButton", {
-		Size = UDim2.new(1, 0, 0, 36),
-		BackgroundTransparency = 1,
-		Text = "",
+	local Card = New("Frame", {
+		Size = UDim2.fromOffset(360, 160),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		BackgroundColor3 = Color3.fromRGB(15, 27, 36),
+		ZIndex = 151,
+		Parent = Tint,
 	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
+		New("UIStroke", { Transparency = 0.5, ThemeTag = { Color = "DialogBorder" } }),
 		New("TextLabel", {
 			Text = Title,
 			FontFace = Fonts.SemiBold,
+			TextSize = 16,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Position = UDim2.fromOffset(16, 16),
+			Size = UDim2.new(1, -32, 0, 20),
+			ThemeTag = { TextColor3 = "Text" },
+		}),
+		New("TextLabel", {
+			Text = Desc,
+			FontFace = Fonts.Regular,
+			TextSize = 13,
+			TextWrapped = true,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Position = UDim2.fromOffset(16, 42),
+			Size = UDim2.new(1, -32, 0, 50),
+			ThemeTag = { TextColor3 = "SubText" },
+		}),
+		ButtonHolder,
+	})
+
+	local function Close()
+		Library.DialogOpen = false
+		Tween(Tint, 0.2, { BackgroundTransparency = 1 })
+		task.delay(0.2, function() Tint:Destroy() end)
+	end
+
+	for _, BtnData in ipairs(Buttons) do
+		local BtnName = BtnData.Name or BtnData.Title or "Button"
+		local Btn = New("TextButton", {
+			Size = UDim2.fromOffset(80, 30),
+			BackgroundColor3 = Color3.fromRGB(24, 44, 58),
+			Text = BtnName,
+			FontFace = Fonts.Medium,
+			TextSize = 12,
+			Parent = ButtonHolder,
+			ThemeTag = { TextColor3 = "Text" },
+		}, {
+			New("UICorner", { CornerRadius = UDim.new(0, 6) }),
+			New("UIStroke", { Transparency = 0.5, ThemeTag = { Color = "InElementBorder" } }),
+		})
+
+		AddSignal(Btn.MouseButton1Click, function()
+			if BtnData.Callback then
+				Library:SafeCallback(BtnData.Callback)
+			end
+			Close()
+		end)
+	end
+
+	Tween(Tint, 0.2, { BackgroundTransparency = 0.5 })
+end
+
+--------------------------------------------------------------------------------
+-- Section Elements (Maclib & Fluent Fused)
+--------------------------------------------------------------------------------
+
+local SectionElements = {}
+
+-- 1. Header
+function SectionElements:Header(Settings)
+	Settings = Settings or {}
+	local Title = Settings.Name or Settings.Text or "Header"
+
+	local HeaderFrame = New("Frame", {
+		Name = "Header",
+		Size = UDim2.new(1, 0, 0, 24),
+		BackgroundTransparency = 1,
+		LayoutOrder = NextLayoutOrder(),
+		Parent = self.Container,
+	}, {
+		New("TextLabel", {
+			Text = Title,
+			FontFace = Fonts.Heading,
+			TextSize = 14,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Size = UDim2.fromScale(1, 1),
+			Position = UDim2.fromOffset(4, 0),
+			ThemeTag = { TextColor3 = "Text" },
+		}),
+	})
+	return HeaderFrame
+end
+
+-- 2. Divider
+function SectionElements:Divider()
+	local DividerFrame = New("Frame", {
+		Name = "Divider",
+		Size = UDim2.new(1, 0, 0, 1),
+		BackgroundTransparency = 0.5,
+		LayoutOrder = NextLayoutOrder(),
+		Parent = self.Container,
+		ThemeTag = { BackgroundColor3 = "TitleBarLine" },
+	})
+	return DividerFrame
+end
+
+-- 3. Spacer
+function SectionElements:Spacer(Height)
+	Height = Height or 8
+	local SpacerFrame = New("Frame", {
+		Name = "Spacer",
+		Size = UDim2.new(1, 0, 0, Height),
+		BackgroundTransparency = 1,
+		LayoutOrder = NextLayoutOrder(),
+		Parent = self.Container,
+	})
+	return SpacerFrame
+end
+
+-- 4. Label & SubLabel
+function SectionElements:Label(Settings)
+	Settings = Settings or {}
+	local Text = Settings.Text or Settings.Name or ""
+	local Frame = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 20),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		LayoutOrder = NextLayoutOrder(),
+		Parent = self.Container,
+	}, {
+		New("TextLabel", {
+			Text = Text,
+			FontFace = Fonts.Medium,
+			TextSize = 13,
+			TextWrapped = true,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Size = UDim2.new(1, 0, 0, 16),
+			Position = UDim2.fromOffset(4, 0),
+			ThemeTag = { TextColor3 = "Text" },
+		}),
+	})
+	return Frame
+end
+
+function SectionElements:SubLabel(Settings)
+	Settings = Settings or {}
+	local Text = Settings.Text or Settings.Name or ""
+	local Frame = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 18),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		LayoutOrder = NextLayoutOrder(),
+		Parent = self.Container,
+	}, {
+		New("TextLabel", {
+			Text = Text,
+			FontFace = Fonts.Regular,
+			TextSize = 12,
+			TextWrapped = true,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Size = UDim2.new(1, 0, 0, 14),
+			Position = UDim2.fromOffset(4, 0),
+			ThemeTag = { TextColor3 = "SubText" },
+		}),
+	})
+	return Frame
+end
+
+-- 5. Paragraph
+function SectionElements:Paragraph(Settings)
+	Settings = Settings or {}
+	local Title = Settings.Header or Settings.Title or "Paragraph"
+	local Body = Settings.Body or Settings.Content or ""
+
+	local Card = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 0.5,
+		LayoutOrder = NextLayoutOrder(),
+		Parent = self.Container,
+		ThemeTag = { BackgroundColor3 = "CardBackground" },
+	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
+		New("UIStroke", { Transparency = 0.6, ThemeTag = { Color = "CardBorder" } }),
+		New("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }),
+		New("TextLabel", {
+			Text = Title,
+			FontFace = Fonts.SemiBold,
+			TextSize = 13,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Size = UDim2.new(1, 0, 0, 16),
+			ThemeTag = { TextColor3 = "Text" },
+		}),
+		New("TextLabel", {
+			Text = Body,
+			FontFace = Fonts.Regular,
+			TextSize = 12,
+			TextWrapped = true,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			AutomaticSize = Enum.AutomaticSize.Y,
+			Position = UDim2.fromOffset(0, 18),
+			Size = UDim2.new(1, 0, 0, 0),
+			ThemeTag = { TextColor3 = "SubText" },
+		}),
+	})
+	return Card
+end
+
+-- 6. Button
+function SectionElements:Button(Settings)
+	Settings = Settings or {}
+	local Title = Settings.Name or Settings.Title or "Button"
+	local Callback = Settings.Callback or function() end
+
+	local Btn = New("TextButton", {
+		Size = UDim2.new(1, 0, 0, 36),
+		BackgroundTransparency = 0.45,
+		Text = "",
+		LayoutOrder = NextLayoutOrder(),
+		Parent = self.Container,
+		ThemeTag = { BackgroundColor3 = "Element" },
+	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
+		New("UIStroke", { Transparency = 0.6, ThemeTag = { Color = "ElementBorder" } }),
+		New("TextLabel", {
+			Text = Title,
+			FontFace = Fonts.Medium,
 			TextSize = 13,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Position = UDim2.fromOffset(12, 0),
 			Size = UDim2.new(1, -40, 1, 0),
 			ThemeTag = { TextColor3 = "Text" },
 		}),
-		Chevron,
-	})
-
-	local CardFrame = New("Frame", {
-		Name = "Card_" .. Title,
-		Size = UDim2.new(1, 0, 0, 38),
-		AutomaticSize = Enum.AutomaticSize.Y,
-		BackgroundTransparency = 0.35,
-		LayoutOrder = NextLayoutOrder(),
-		Parent = self.Container,
-		ThemeTag = {
-			BackgroundColor3 = "CardBackground",
-		},
-	}, {
-		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
-		New("UIStroke", {
-			Transparency = 0.5,
-			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			ThemeTag = { Color = "CardBorder" },
-		}),
-		CardHeader,
-		CardContent,
-	})
-
-	function Card:ToggleCollapse()
-		Card.Collapsed = not Card.Collapsed
-		if Card.Collapsed then
-			Tween(Chevron, 0.2, { Rotation = -90 })
-			CardContent.Visible = false
-		else
-			Tween(Chevron, 0.2, { Rotation = 0 })
-			CardContent.Visible = true
-		end
-	end
-
-	if Collapsible then
-		AddSignal(CardHeader.MouseButton1Click, function()
-			Card:ToggleCollapse()
-		end)
-	end
-
-	Card.Container = CardContent
-	Card.ScrollFrame = self.ScrollFrame
-
-	-- Inherit all element creation methods
-	for Name, Func in pairs(Elements) do
-		Card[Name] = function(selfRef, ...)
-			return Func(selfRef, ...)
-		end
-	end
-
-	return Card
-end
-
--- 2. Item Action Row (Like the Pet Steal Row in the screenshot)
-function Elements:AddRow(Config)
-	assert(Config.Title, "AddRow - Missing Title")
-
-	local Row = {
-		Title = Config.Title,
-		Value = Config.Value or "",
-		SubText = Config.SubText or "",
-		ButtonText = Config.ButtonText or "Steal",
-		Callback = Config.Callback or function() end,
-		Type = "Row",
-	}
-
-	local ResolvedIcon = ResolveImage(Config.Image) or Assets.Box
-
-	local Thumbnail = New("ImageLabel", {
-		Size = UDim2.fromOffset(36, 36),
-		Position = UDim2.fromOffset(8, 7),
-		Image = ResolvedIcon,
-		BackgroundColor3 = Color3.fromRGB(18, 32, 42),
-		BackgroundTransparency = 0.3,
-	}, {
-		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
-	})
-
-	local TitleLabel = New("TextLabel", {
-		Text = Row.Title,
-		FontFace = Fonts.SemiBold,
-		TextSize = 13,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Position = UDim2.fromOffset(52, 6),
-		Size = UDim2.new(1, -140, 0, 14),
-		ThemeTag = { TextColor3 = "Text" },
-	})
-
-	local ValueLabel = New("TextLabel", {
-		Text = Row.Value,
-		FontFace = Fonts.Medium,
-		TextSize = 12,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Position = UDim2.fromOffset(52, 22),
-		Size = UDim2.new(1, -140, 0, 13),
-		ThemeTag = { TextColor3 = "Success" }, -- Bright green/cyan for income
-	})
-
-	local SubLabel = New("TextLabel", {
-		Text = Row.SubText,
-		FontFace = Fonts.Regular,
-		TextSize = 11,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Position = UDim2.fromOffset(52, 35),
-		Size = UDim2.new(1, -140, 0, 12),
-		ThemeTag = { TextColor3 = "SubText" },
-	})
-
-	local ActionBtn = New("TextButton", {
-		Size = UDim2.fromOffset(68, 26),
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -8, 0.5, 0),
-		Text = Row.ButtonText,
-		FontFace = Fonts.SemiBold,
-		TextSize = 12,
-		ThemeTag = {
-			BackgroundColor3 = "PinkAccent",
-			TextColor3 = "Text",
-		},
-	}, {
-		New("UICorner", { CornerRadius = UDim.new(1, 0) }), -- Pill shape
-	})
-
-	local RowFrame = New("Frame", {
-		Size = UDim2.new(1, 0, 0, 52),
-		BackgroundTransparency = 0.5,
-		LayoutOrder = NextLayoutOrder(),
-		Parent = self.Container,
-		ThemeTag = {
-			BackgroundColor3 = "Element",
-		},
-	}, {
-		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
-		New("UIStroke", { Transparency = 0.6, ThemeTag = { Color = "ElementBorder" } }),
-		Thumbnail,
-		TitleLabel,
-		ValueLabel,
-		SubLabel,
-		ActionBtn,
-	})
-
-	AddSignal(ActionBtn.MouseButton1Click, function()
-		Tween(ActionBtn, 0.1, { Size = UDim2.fromOffset(64, 24) })
-		task.delay(0.1, function()
-			Tween(ActionBtn, 0.1, { Size = UDim2.fromOffset(68, 26) })
-		end)
-		Library:SafeCallback(Row.Callback)
-	end)
-
-	function Row:Update(NewData)
-		if NewData.Title then TitleLabel.Text = NewData.Title end
-		if NewData.Value then ValueLabel.Text = NewData.Value end
-		if NewData.SubText then SubLabel.Text = NewData.SubText end
-		if NewData.ButtonText then ActionBtn.Text = NewData.ButtonText end
-		if NewData.Image then Thumbnail.Image = ResolveImage(NewData.Image) or Assets.Box end
-	end
-
-	return Row
-end
-
--- 3. Status Key-Value Tracker Widget
-function Elements:AddStatus(InitialData)
-	InitialData = InitialData or {}
-	local Status = { Data = InitialData, Labels = {}, Type = "Status" }
-
-	local Frame = New("Frame", {
-		Size = UDim2.new(1, 0, 0, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
-		BackgroundTransparency = 1,
-		LayoutOrder = NextLayoutOrder(),
-		Parent = self.Container,
-	}, {
-		New("UIListLayout", {
-			Padding = UDim.new(0, 4),
-			SortOrder = Enum.SortOrder.LayoutOrder,
+		New("ImageLabel", {
+			Image = Assets.ChevronRight,
+			Size = UDim2.fromOffset(14, 14),
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -12, 0.5, 0),
+			ThemeTag = { ImageColor3 = "SubText" },
 		}),
 	})
 
-	for Key, Val in pairs(InitialData) do
-		local Item = New("Frame", {
-			Size = UDim2.new(1, 0, 0, 18),
-			BackgroundTransparency = 1,
-			Parent = Frame,
-		}, {
-			New("TextLabel", {
-				Text = Key .. ":",
-				FontFace = Fonts.SemiBold,
-				TextSize = 12,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				Size = UDim2.fromOffset(70, 18),
-				ThemeTag = { TextColor3 = "Accent" },
-			}),
-			New("TextLabel", {
-				Name = "Val",
-				Text = tostring(Val),
-				FontFace = Fonts.Regular,
-				TextSize = 12,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				Position = UDim2.fromOffset(75, 0),
-				Size = UDim2.new(1, -75, 1, 0),
-				ThemeTag = { TextColor3 = "Text" },
-			}),
-		})
-		Status.Labels[Key] = Item.Val
-	end
+	AddSignal(Btn.MouseEnter, function() Tween(Btn, 0.15, { BackgroundTransparency = 0.3 }) end)
+	AddSignal(Btn.MouseLeave, function() Tween(Btn, 0.15, { BackgroundTransparency = 0.45 }) end)
+	AddSignal(Btn.MouseButton1Click, function() Library:SafeCallback(Callback) end)
 
-	function Status:Set(Key, Val)
-		if Status.Labels[Key] then
-			Status.Labels[Key].Text = tostring(Val)
-		end
-	end
-
-	return Status
+	return Btn
 end
 
--- 4. Toggle (Pill Switch)
-function Elements:AddToggle(Idx, Config)
-	Idx, Config = ParseArgs(Idx, Config)
-	assert(Config.Title, "Toggle - Missing Title")
+-- 7. Toggle (Maclib / Fluent hybrid)
+function SectionElements:Toggle(Settings, Idx)
+	Settings = Settings or {}
+	local Title = Settings.Name or Settings.Title or "Toggle"
+	local Default = Settings.Default or false
+	local Callback = Settings.Callback or function() end
 
-	local Toggle = {
-		Value = Config.Default or false,
-		Callback = Config.Callback or function() end,
-		Changed = function() end,
+	local ToggleObj = {
+		Value = Default,
+		Callback = Callback,
 		Type = "Toggle",
 	}
 
@@ -1152,9 +1081,7 @@ function Elements:AddToggle(Idx, Config)
 		Position = UDim2.new(0, 2, 0.5, 0),
 		AnchorPoint = Vector2.new(0, 0.5),
 		BackgroundColor3 = Color3.new(1, 1, 1),
-	}, {
-		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-	})
+	}, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
 
 	local ToggleTrack = New("Frame", {
 		Size = UDim2.fromOffset(36, 18),
@@ -1166,72 +1093,70 @@ function Elements:AddToggle(Idx, Config)
 		ToggleCircle,
 	})
 
-	local ItemFrame = New("TextButton", {
+	local Frame = New("TextButton", {
 		Size = UDim2.new(1, 0, 0, 36),
 		BackgroundTransparency = 0.5,
 		Text = "",
 		LayoutOrder = NextLayoutOrder(),
 		Parent = self.Container,
-		ThemeTag = {
-			BackgroundColor3 = "Element",
-		},
+		ThemeTag = { BackgroundColor3 = "Element" },
 	}, {
 		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
 		New("UIStroke", { Transparency = 0.6, ThemeTag = { Color = "ElementBorder" } }),
 		New("TextLabel", {
-			Text = Config.Title,
+			Text = Title,
 			FontFace = Fonts.Medium,
 			TextSize = 13,
 			TextXAlignment = Enum.TextXAlignment.Left,
-			Position = UDim2.fromOffset(10, 0),
+			Position = UDim2.fromOffset(12, 0),
 			Size = UDim2.new(1, -55, 1, 0),
 			ThemeTag = { TextColor3 = "Text" },
 		}),
 		ToggleTrack,
 	})
 
-	function Toggle:SetValue(Val)
-		Toggle.Value = not not Val
-		if Toggle.Value then
+	function ToggleObj:SetValue(Val)
+		ToggleObj.Value = not not Val
+		if ToggleObj.Value then
 			Tween(ToggleTrack, 0.2, { BackgroundColor3 = Creator.GetThemeProperty("PinkAccent") or Color3.fromRGB(244, 63, 94) })
 			Tween(ToggleCircle, 0.2, { Position = UDim2.new(1, -16, 0.5, 0) })
 		else
 			Tween(ToggleTrack, 0.2, { BackgroundColor3 = Color3.fromRGB(35, 50, 62) })
 			Tween(ToggleCircle, 0.2, { Position = UDim2.new(0, 2, 0.5, 0) })
 		end
-		Library:SafeCallback(Toggle.Callback, Toggle.Value)
-		Library:SafeCallback(Toggle.Changed, Toggle.Value)
+		Library:SafeCallback(ToggleObj.Callback, ToggleObj.Value)
 	end
 
-	function Toggle:OnChanged(Func)
-		Toggle.Changed = Func
-		Func(Toggle.Value)
+	function ToggleObj:OnChanged(Func)
+		ToggleObj.Callback = Func
+		Func(ToggleObj.Value)
 	end
 
-	AddSignal(ItemFrame.MouseButton1Click, function()
-		Toggle:SetValue(not Toggle.Value)
+	AddSignal(Frame.MouseButton1Click, function()
+		ToggleObj:SetValue(not ToggleObj.Value)
 	end)
 
-	Toggle:SetValue(Toggle.Value)
-	RegisterOption(Idx, Toggle)
-	return Toggle
+	ToggleObj:SetValue(ToggleObj.Value)
+	RegisterOption(Idx or Title, ToggleObj)
+	return ToggleObj
 end
 
--- 5. Slider
-function Elements:AddSlider(Idx, Config)
-	Idx, Config = ParseArgs(Idx, Config)
-	assert(Config.Title, "Slider - Missing Title")
-	local Min = Config.Min or 0
-	local Max = Config.Max or 100
-	local Rounding = Config.Rounding or 0
+-- 8. Slider
+function SectionElements:Slider(Settings, Idx)
+	Settings = Settings or {}
+	local Title = Settings.Name or Settings.Title or "Slider"
+	local Min = Settings.Minimum or Settings.Min or 0
+	local Max = Settings.Maximum or Settings.Max or 100
+	local Precision = Settings.Precision or Settings.Rounding or 0
+	local DisplayMethod = Settings.DisplayMethod or "Value" -- "Value" or "Percent"
+	local Callback = Settings.Callback or function() end
 
-	local Slider = {
-		Value = math.clamp(Config.Default or Min, Min, Max),
+	local SliderObj = {
+		Value = math.clamp(Settings.Default or Min, Min, Max),
 		Min = Min,
 		Max = Max,
-		Rounding = Rounding,
-		Callback = Config.Callback or function() end,
-		Changed = function() end,
+		Precision = Precision,
+		Callback = Callback,
 		Type = "Slider",
 	}
 
@@ -1248,7 +1173,7 @@ function Elements:AddSlider(Idx, Config)
 	}, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
 
 	local SliderRail = New("Frame", {
-		Size = UDim2.fromOffset(110, 4),
+		Size = UDim2.fromOffset(120, 4),
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, -10, 0.5, 0),
 		BackgroundColor3 = Color3.fromRGB(35, 50, 62),
@@ -1259,17 +1184,17 @@ function Elements:AddSlider(Idx, Config)
 	})
 
 	local ValueLabel = New("TextLabel", {
-		Text = tostring(Slider.Value),
+		Text = tostring(SliderObj.Value),
 		FontFace = Fonts.Medium,
 		TextSize = 12,
 		TextXAlignment = Enum.TextXAlignment.Right,
-		Size = UDim2.fromOffset(45, 14),
+		Size = UDim2.fromOffset(50, 14),
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -125, 0.5, 0),
+		Position = UDim2.new(1, -135, 0.5, 0),
 		ThemeTag = { TextColor3 = "SubText" },
 	})
 
-	local ItemFrame = New("Frame", {
+	local Frame = New("Frame", {
 		Size = UDim2.new(1, 0, 0, 36),
 		BackgroundTransparency = 0.5,
 		LayoutOrder = NextLayoutOrder(),
@@ -1279,12 +1204,12 @@ function Elements:AddSlider(Idx, Config)
 		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
 		New("UIStroke", { Transparency = 0.6, ThemeTag = { Color = "ElementBorder" } }),
 		New("TextLabel", {
-			Text = Config.Title,
+			Text = Title,
 			FontFace = Fonts.Medium,
 			TextSize = 13,
 			TextXAlignment = Enum.TextXAlignment.Left,
-			Position = UDim2.fromOffset(10, 0),
-			Size = UDim2.new(1, -180, 1, 0),
+			Position = UDim2.fromOffset(12, 0),
+			Size = UDim2.new(1, -190, 1, 0),
 			ThemeTag = { TextColor3 = "Text" },
 		}),
 		ValueLabel,
@@ -1296,7 +1221,7 @@ function Elements:AddSlider(Idx, Config)
 		local AbsPos = SliderRail.AbsolutePosition
 		local AbsSize = SliderRail.AbsoluteSize
 		local Scale = math.clamp((Input.Position.X - AbsPos.X) / AbsSize.X, 0, 1)
-		Slider:SetValue(Slider.Min + (Slider.Max - Slider.Min) * Scale)
+		SliderObj:SetValue(SliderObj.Min + (SliderObj.Max - SliderObj.Min) * Scale)
 	end
 
 	AddSignal(SliderRail.InputBegan, function(Input)
@@ -1309,39 +1234,207 @@ function Elements:AddSlider(Idx, Config)
 		if IsClickInput(Input) then Dragging = false end
 	end)
 
-	function Slider:SetValue(Val)
-		Val = math.clamp(tonumber(Val) or Slider.Min, Slider.Min, Slider.Max)
-		Slider.Value = Library:Round(Val, Slider.Rounding)
-		local Scale = (Slider.Max == Slider.Min) and 0 or ((Slider.Value - Slider.Min) / (Slider.Max - Slider.Min))
+	function SliderObj:SetValue(Val)
+		Val = math.clamp(tonumber(Val) or SliderObj.Min, SliderObj.Min, SliderObj.Max)
+		SliderObj.Value = Library:Round(Val, SliderObj.Precision)
+		local Scale = (SliderObj.Max == SliderObj.Min) and 0 or ((SliderObj.Value - SliderObj.Min) / (SliderObj.Max - SliderObj.Min))
 		SliderFill.Size = UDim2.fromScale(Scale, 1)
 		SliderDot.Position = UDim2.new(Scale, 0, 0.5, 0)
-		ValueLabel.Text = FormatNumber(Slider.Value, Slider.Rounding)
-		Library:SafeCallback(Slider.Callback, Slider.Value)
-		Library:SafeCallback(Slider.Changed, Slider.Value)
+		if DisplayMethod == "Percent" then
+			ValueLabel.Text = string.format("%d%%", math.floor(Scale * 100))
+		else
+			ValueLabel.Text = FormatNumber(SliderObj.Value, SliderObj.Precision)
+		end
+		Library:SafeCallback(SliderObj.Callback, SliderObj.Value)
 	end
 
-	function Slider:OnChanged(Func)
-		Slider.Changed = Func
-		Func(Slider.Value)
-	end
-
-	Slider:SetValue(Slider.Value)
-	RegisterOption(Idx, Slider)
-	return Slider
+	SliderObj:SetValue(SliderObj.Value)
+	RegisterOption(Idx or Title, SliderObj)
+	return SliderObj
 end
 
--- 6. Dropdown
-function Elements:AddDropdown(Idx, Config)
-	Idx, Config = ParseArgs(Idx, Config)
-	assert(Config.Title, "Dropdown - Missing Title")
+-- 9. Input (Maclib / Fluent compatible)
+function SectionElements:Input(Settings, Idx)
+	Settings = Settings or {}
+	local Title = Settings.Name or Settings.Title or "Input"
+	local Placeholder = Settings.Placeholder or "Enter text..."
+	local AcceptedChars = Settings.AcceptedCharacters or "All"
+	local Callback = Settings.Callback or function() end
+	local onChanged = Settings.onChanged or function() end
 
-	local Dropdown = {
-		Values = Config.Values or {},
-		Value = Config.Default,
-		Multi = Config.Multi or false,
-		Opened = false,
+	local InputObj = {
+		Value = Settings.Default or "",
+		Type = "Input",
+	}
+
+	local TextBox = New("TextBox", {
+		Text = tostring(InputObj.Value),
+		PlaceholderText = Placeholder,
+		FontFace = Fonts.Regular,
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Position = UDim2.fromOffset(8, 0),
+		Size = UDim2.new(1, -16, 1, 0),
+		BackgroundTransparency = 1,
+		ClearTextOnFocus = false,
+		ThemeTag = { TextColor3 = "Text", PlaceholderColor3 = "SubText" },
+	})
+
+	local InputBoxFrame = New("Frame", {
+		Size = UDim2.fromOffset(130, 26),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -8, 0.5, 0),
+		BackgroundColor3 = Color3.fromRGB(20, 34, 46),
+	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 5) }),
+		New("UIStroke", { Transparency = 0.5, ThemeTag = { Color = "InElementBorder" } }),
+		TextBox,
+	})
+
+	local Frame = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 36),
+		BackgroundTransparency = 0.5,
+		LayoutOrder = NextLayoutOrder(),
+		Parent = self.Container,
+		ThemeTag = { BackgroundColor3 = "Element" },
+	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
+		New("UIStroke", { Transparency = 0.6, ThemeTag = { Color = "ElementBorder" } }),
+		New("TextLabel", {
+			Text = Title,
+			FontFace = Fonts.Medium,
+			TextSize = 13,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Position = UDim2.fromOffset(12, 0),
+			Size = UDim2.new(1, -150, 1, 0),
+			ThemeTag = { TextColor3 = "Text" },
+		}),
+		InputBoxFrame,
+	})
+
+	local function FilterInput(text)
+		if AcceptedChars == "Numeric" then
+			return text:gsub("%D+", "")
+		end
+		return text
+	end
+
+	AddSignal(TextBox.FocusLost, function()
+		InputObj.Value = FilterInput(TextBox.Text)
+		TextBox.Text = InputObj.Value
+		Library:SafeCallback(Callback, InputObj.Value)
+	end)
+
+	AddSignal(TextBox:GetPropertyChangedSignal("Text"), function()
+		InputObj.Value = FilterInput(TextBox.Text)
+		Library:SafeCallback(onChanged, InputObj.Value)
+	end)
+
+	function InputObj:SetValue(val)
+		InputObj.Value = tostring(val or "")
+		TextBox.Text = InputObj.Value
+		Library:SafeCallback(Callback, InputObj.Value)
+	end
+
+	RegisterOption(Idx or Title, InputObj)
+	return InputObj
+end
+
+-- 10. Keybind
+function SectionElements:Keybind(Settings, Idx)
+	Settings = Settings or {}
+	local Title = Settings.Name or Settings.Title or "Keybind"
+	local Default = Settings.Default or "None"
+	local Callback = Settings.Callback or function() end
+	local onBinded = Settings.onBinded or function() end
+
+	local KeybindObj = {
+		Value = Default,
+		Type = "Keybind",
+	}
+
+	local KeyLabel = New("TextLabel", {
+		Text = tostring(Default),
+		FontFace = Fonts.Medium,
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Size = UDim2.fromScale(1, 1),
+		ThemeTag = { TextColor3 = "Text" },
+	})
+
+	local BindBtn = New("TextButton", {
+		Size = UDim2.fromOffset(70, 26),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -8, 0.5, 0),
+		BackgroundColor3 = Color3.fromRGB(20, 34, 46),
+		Text = "",
+	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 5) }),
+		New("UIStroke", { Transparency = 0.5, ThemeTag = { Color = "InElementBorder" } }),
+		KeyLabel,
+	})
+
+	local Frame = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 36),
+		BackgroundTransparency = 0.5,
+		LayoutOrder = NextLayoutOrder(),
+		Parent = self.Container,
+		ThemeTag = { BackgroundColor3 = "Element" },
+	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
+		New("UIStroke", { Transparency = 0.6, ThemeTag = { Color = "ElementBorder" } }),
+		New("TextLabel", {
+			Text = Title,
+			FontFace = Fonts.Medium,
+			TextSize = 13,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Position = UDim2.fromOffset(12, 0),
+			Size = UDim2.new(1, -90, 1, 0),
+			ThemeTag = { TextColor3 = "Text" },
+		}),
+		BindBtn,
+	})
+
+	local Binding = false
+	AddSignal(BindBtn.MouseButton1Click, function()
+		Binding = true
+		KeyLabel.Text = "..."
+		local Conn
+		Conn = UserInputService.InputBegan:Connect(function(Input)
+			if Input.UserInputType == Enum.UserInputType.Keyboard then
+				Binding = false
+				KeybindObj.Value = Input.KeyCode.Name
+				KeyLabel.Text = Input.KeyCode.Name
+				Library:SafeCallback(onBinded, Input.KeyCode)
+				Conn:Disconnect()
+			end
+		end)
+	end)
+
+	AddSignal(UserInputService.InputBegan, function(Input, Processed)
+		if Processed or Binding or UserInputService:GetFocusedTextBox() then return end
+		if Input.UserInputType == Enum.UserInputType.Keyboard and Input.KeyCode.Name == KeybindObj.Value then
+			Library:SafeCallback(Callback, Input.KeyCode)
+		end
+	end)
+
+	RegisterOption(Idx or Title, KeybindObj)
+	return KeybindObj
+end
+
+-- 11. Dropdown (with optional Search!)
+function SectionElements:Dropdown(Settings, Idx)
+	Settings = Settings or {}
+	local Title = Settings.Name or Settings.Title or "Dropdown"
+	local Options = Settings.Options or Settings.Values or {}
+	local Multi = Settings.Multi or false
+	local Callback = Settings.Callback or function() end
+
+	local DropdownObj = {
+		Values = Options,
+		Value = Settings.Default or (Multi and {} or Options[1]),
+		Multi = Multi,
 		Type = "Dropdown",
-		Callback = Config.Callback or function() end,
 	}
 
 	local DisplayLabel = New("TextLabel", {
@@ -1356,7 +1449,7 @@ function Elements:AddDropdown(Idx, Config)
 	})
 
 	local DropdownBtn = New("TextButton", {
-		Size = UDim2.fromOffset(130, 26),
+		Size = UDim2.fromOffset(140, 26),
 		AnchorPoint = Vector2.new(1, 0.5),
 		Position = UDim2.new(1, -8, 0.5, 0),
 		BackgroundColor3 = Color3.fromRGB(20, 34, 46),
@@ -1374,7 +1467,7 @@ function Elements:AddDropdown(Idx, Config)
 		}),
 	})
 
-	local ItemFrame = New("Frame", {
+	local Frame = New("Frame", {
 		Size = UDim2.new(1, 0, 0, 36),
 		BackgroundTransparency = 0.5,
 		LayoutOrder = NextLayoutOrder(),
@@ -1384,136 +1477,274 @@ function Elements:AddDropdown(Idx, Config)
 		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
 		New("UIStroke", { Transparency = 0.6, ThemeTag = { Color = "ElementBorder" } }),
 		New("TextLabel", {
-			Text = Config.Title,
+			Text = Title,
 			FontFace = Fonts.Medium,
 			TextSize = 13,
 			TextXAlignment = Enum.TextXAlignment.Left,
-			Position = UDim2.fromOffset(10, 0),
-			Size = UDim2.new(1, -150, 1, 0),
+			Position = UDim2.fromOffset(12, 0),
+			Size = UDim2.new(1, -160, 1, 0),
 			ThemeTag = { TextColor3 = "Text" },
 		}),
 		DropdownBtn,
 	})
 
-	function Dropdown:SetValue(Val)
-		Dropdown.Value = Val
-		DisplayLabel.Text = tostring(Val or "--")
-		Library:SafeCallback(Dropdown.Callback, Dropdown.Value)
+	function DropdownObj:UpdateSelection(Val)
+		DropdownObj.Value = Val
+		if Multi and type(Val) == "table" then
+			local T = {}
+			for K, V in pairs(Val) do
+				if V == true then table.insert(T, tostring(K))
+				elseif type(V) == "string" then table.insert(T, V) end
+			end
+			DisplayLabel.Text = #T > 0 and table.concat(T, ", ") or "--"
+		else
+			DisplayLabel.Text = tostring(Val or "--")
+		end
+		Library:SafeCallback(Callback, DropdownObj.Value)
 	end
 
-	Dropdown:SetValue(Dropdown.Value)
-	RegisterOption(Idx, Dropdown)
-	return Dropdown
+	DropdownObj:UpdateSelection(DropdownObj.Value)
+	RegisterOption(Idx or Title, DropdownObj)
+	return DropdownObj
 end
 
--- 7. Button
-function Elements:AddButton(Config)
-	assert(Config.Title, "AddButton - Missing Title")
-	local Btn = New("TextButton", {
-		Size = UDim2.new(1, 0, 0, 34),
-		BackgroundTransparency = 0.5,
-		Text = Config.Title,
-		FontFace = Fonts.Medium,
-		TextSize = 13,
-		LayoutOrder = NextLayoutOrder(),
-		Parent = self.Container,
-		ThemeTag = { BackgroundColor3 = "Element", TextColor3 = "Text" },
+-- 12. Colorpicker (with Alpha!)
+function SectionElements:Colorpicker(Settings, Idx)
+	Settings = Settings or {}
+	local Title = Settings.Name or Settings.Title or "Colorpicker"
+	local Default = Settings.Default or Color3.fromRGB(0, 255, 255)
+	local Alpha = Settings.Alpha or 0
+	local Callback = Settings.Callback or function() end
+
+	local ColorObj = {
+		Color = Default,
+		Alpha = Alpha,
+		Type = "Colorpicker",
+	}
+
+	local ColorPreview = New("Frame", {
+		Size = UDim2.fromOffset(26, 18),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -8, 0.5, 0),
+		BackgroundColor3 = Default,
 	}, {
-		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
-		New("UIStroke", { Transparency = 0.6, ThemeTag = { Color = "ElementBorder" } }),
+		New("UICorner", { CornerRadius = UDim.new(0, 4) }),
+		New("UIStroke", { Transparency = 0.5, ThemeTag = { Color = "InElementBorder" } }),
 	})
 
-	AddSignal(Btn.MouseButton1Click, function()
-		Library:SafeCallback(Config.Callback)
-	end)
-	return Btn
-end
-
--- 8. Paragraph
-function Elements:AddParagraph(Config)
-	assert(Config.Title, "AddParagraph - Missing Title")
-	local Content = Config.Content or ""
-	local Item = New("Frame", {
-		Size = UDim2.new(1, 0, 0, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
-		BackgroundTransparency = 0.6,
+	local Frame = New("TextButton", {
+		Size = UDim2.new(1, 0, 0, 36),
+		BackgroundTransparency = 0.5,
+		Text = "",
 		LayoutOrder = NextLayoutOrder(),
 		Parent = self.Container,
 		ThemeTag = { BackgroundColor3 = "Element" },
 	}, {
 		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
-		New("UIStroke", { Transparency = 0.7, ThemeTag = { Color = "ElementBorder" } }),
-		New("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }),
+		New("UIStroke", { Transparency = 0.6, ThemeTag = { Color = "ElementBorder" } }),
+		New("TextLabel", {
+			Text = Title,
+			FontFace = Fonts.Medium,
+			TextSize = 13,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Position = UDim2.fromOffset(12, 0),
+			Size = UDim2.new(1, -50, 1, 0),
+			ThemeTag = { TextColor3 = "Text" },
+		}),
+		ColorPreview,
+	})
+
+	function ColorObj:SetColor(C, A)
+		ColorObj.Color = C
+		if A ~= nil then ColorObj.Alpha = A end
+		ColorPreview.BackgroundColor3 = C
+		Library:SafeCallback(Callback, ColorObj.Color, ColorObj.Alpha)
+	end
+
+	RegisterOption(Idx or Title, ColorObj)
+	return ColorObj
+end
+
+-- 13. Collapsible Card (GroupBox)
+function SectionElements:CollapsibleCard(Title, Config)
+	Config = Config or {}
+	local Collapsible = Config.Collapsible ~= false
+
+	local Card = { Title = Title, Collapsed = Config.DefaultCollapsed or false, Type = "Card" }
+
+	local CardContent = New("Frame", {
+		Name = "CardContent",
+		Size = UDim2.new(1, 0, 0, 0),
+		Position = UDim2.fromOffset(0, 36),
+		BackgroundTransparency = 1,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		ClipsDescendants = true,
+	}, {
+		New("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
+		New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8) }),
+	})
+
+	local Chevron = New("ImageLabel", {
+		Image = Assets.ChevronDown,
+		Size = UDim2.fromOffset(14, 14),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -10, 0.5, 0),
+		BackgroundTransparency = 1,
+		Visible = Collapsible,
+		ThemeTag = { ImageColor3 = "SubText" },
+	})
+
+	local CardHeader = New("TextButton", {
+		Size = UDim2.new(1, 0, 0, 34),
+		BackgroundTransparency = 1,
+		Text = "",
+	}, {
+		New("TextLabel", {
+			Text = Title,
+			FontFace = Fonts.SemiBold,
+			TextSize = 13,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Position = UDim2.fromOffset(10, 0),
+			Size = UDim2.new(1, -30, 1, 0),
+			ThemeTag = { TextColor3 = "Text" },
+		}),
+		Chevron,
+	})
+
+	local CardFrame = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 36),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 0.4,
+		LayoutOrder = NextLayoutOrder(),
+		Parent = self.Container,
+		ThemeTag = { BackgroundColor3 = "CardBackground" },
+	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
+		New("UIStroke", { Transparency = 0.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, ThemeTag = { Color = "CardBorder" } }),
+		CardHeader,
+		CardContent,
+	})
+
+	if Collapsible then
+		AddSignal(CardHeader.MouseButton1Click, function()
+			Card.Collapsed = not Card.Collapsed
+			Tween(Chevron, 0.2, { Rotation = Card.Collapsed and -90 or 0 })
+			CardContent.Visible = not Card.Collapsed
+		end)
+	end
+
+	Card.Container = CardContent
+	for Name, Func in pairs(SectionElements) do
+		Card[Name] = function(selfRef, ...) return Func(selfRef, ...) end
+	end
+	return Card
+end
+
+-- 14. AddRow (Pet / Item Action Row)
+function SectionElements:AddRow(Config)
+	assert(Config.Title, "AddRow - Missing Title")
+	local ResolvedIcon = ResolveImage(Config.Image) or Assets.Box
+
+	local ActionBtn = New("TextButton", {
+		Size = UDim2.fromOffset(68, 26),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -8, 0.5, 0),
+		Text = Config.ButtonText or "Steal",
+		FontFace = Fonts.SemiBold,
+		TextSize = 12,
+		ThemeTag = { BackgroundColor3 = "PinkAccent", TextColor3 = "Text" },
+	}, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+
+	local RowFrame = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 50),
+		BackgroundTransparency = 0.5,
+		LayoutOrder = NextLayoutOrder(),
+		Parent = self.Container,
+		ThemeTag = { BackgroundColor3 = "Element" },
+	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
+		New("UIStroke", { Transparency = 0.6, ThemeTag = { Color = "ElementBorder" } }),
+		New("ImageLabel", {
+			Size = UDim2.fromOffset(34, 34),
+			Position = UDim2.fromOffset(8, 8),
+			Image = ResolvedIcon,
+			BackgroundColor3 = Color3.fromRGB(18, 32, 42),
+			BackgroundTransparency = 0.3,
+		}, { New("UICorner", { CornerRadius = UDim.new(0, 6) }) }),
 		New("TextLabel", {
 			Text = Config.Title,
 			FontFace = Fonts.SemiBold,
 			TextSize = 13,
 			TextXAlignment = Enum.TextXAlignment.Left,
-			Size = UDim2.new(1, 0, 0, 14),
+			Position = UDim2.fromOffset(50, 6),
+			Size = UDim2.new(1, -130, 0, 14),
 			ThemeTag = { TextColor3 = "Text" },
 		}),
 		New("TextLabel", {
-			Text = Content,
-			FontFace = Fonts.Regular,
+			Text = Config.Value or "",
+			FontFace = Fonts.Medium,
 			TextSize = 12,
-			TextWrapped = true,
 			TextXAlignment = Enum.TextXAlignment.Left,
-			AutomaticSize = Enum.AutomaticSize.Y,
-			Position = UDim2.fromOffset(0, 18),
-			Size = UDim2.new(1, 0, 0, 0),
+			Position = UDim2.fromOffset(50, 21),
+			Size = UDim2.new(1, -130, 0, 13),
+			ThemeTag = { TextColor3 = "Success" },
+		}),
+		New("TextLabel", {
+			Text = Config.SubText or "",
+			FontFace = Fonts.Regular,
+			TextSize = 11,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Position = UDim2.fromOffset(50, 34),
+			Size = UDim2.new(1, -130, 0, 12),
 			ThemeTag = { TextColor3 = "SubText" },
 		}),
+		ActionBtn,
 	})
-	return Item
+
+	AddSignal(ActionBtn.MouseButton1Click, function()
+		if Config.Callback then Library:SafeCallback(Config.Callback) end
+	end)
+
+	return RowFrame
 end
 
+-- Fluent Aliases on SectionElements
+SectionElements.AddButton = SectionElements.Button
+SectionElements.AddToggle = SectionElements.Toggle
+SectionElements.AddSlider = SectionElements.Slider
+SectionElements.AddInput = SectionElements.Input
+SectionElements.AddKeybind = SectionElements.Keybind
+SectionElements.AddDropdown = SectionElements.Dropdown
+SectionElements.AddColorpicker = SectionElements.Colorpicker
+SectionElements.AddParagraph = SectionElements.Paragraph
+SectionElements.AddCard = SectionElements.CollapsibleCard
+
 --------------------------------------------------------------------------------
--- Tab & Multi-Column Architecture
+-- Tab & TabGroup Architecture (Maclib & Fluent Fused)
 --------------------------------------------------------------------------------
 
-local TabModule = {
+local TabManager = {
 	Tabs = {},
 	Containers = {},
 	SelectedTab = 0,
-	TabCount = 0,
 	Window = nil,
 }
 
-function TabModule:Init(Window)
-	TabModule.Window = Window
-	TabModule.Tabs = {}
-	TabModule.Containers = {}
-	TabModule.SelectedTab = 0
-	TabModule.TabCount = 0
-	return TabModule
-end
-
-function TabModule:New(Title, Icon, Parent)
-	TabModule.TabCount += 1
-	local TabIndex = TabModule.TabCount
-
-	local Tab = {
-		Name = Title,
-		Index = TabIndex,
-		Selected = false,
-		Type = "Tab",
-	}
-
+local function CreateTabObject(Window, Title, Icon, ParentHolder)
+	local TabIndex = #TabManager.Tabs + 1
 	local ResolvedIcon = ResolveImage(Icon) or Assets.Box
 
-	Tab.Button = New("TextButton", {
+	local TabBtn = New("TextButton", {
 		Size = UDim2.new(1, 0, 0, 36),
 		BackgroundTransparency = 1,
-		Parent = Parent,
+		Parent = ParentHolder,
 		LayoutOrder = TabIndex,
 		Text = "",
-		ThemeTag = {
-			BackgroundColor3 = "TabActive",
-		},
+		ThemeTag = { BackgroundColor3 = "TabActive" },
 	}, {
 		New("UICorner", { CornerRadius = UDim.new(0, 7) }),
 		New("ImageLabel", {
-			Size = UDim2.fromOffset(18, 18),
+			Size = UDim2.fromOffset(16, 16),
 			Position = UDim2.new(0, 12, 0.5, 0),
 			AnchorPoint = Vector2.new(0, 0.5),
 			Image = ResolvedIcon,
@@ -1524,51 +1755,41 @@ function TabModule:New(Title, Icon, Parent)
 			FontFace = Fonts.Medium,
 			TextSize = 13,
 			TextXAlignment = Enum.TextXAlignment.Left,
-			Position = UDim2.fromOffset(38, 0),
-			Size = UDim2.new(1, -44, 1, 0),
+			Position = UDim2.fromOffset(36, 0),
+			Size = UDim2.new(1, -42, 1, 0),
 			ThemeTag = { TextColor3 = "Text" },
 		}),
 	})
 
-	-- Container with 2-Column Grid Layout (Like Axon Hub screenshot)
-	local ContainerFrame = New("ScrollingFrame", {
+	-- Container with 2-Column Split Layout (Maclib Side = "Left" | "Right")
+	local ContainerScroll = New("ScrollingFrame", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
-		Parent = TabModule.Window.ContainerHolder,
+		Parent = Window.ContainerHolder,
 		Visible = false,
 		ScrollBarThickness = 3,
 		CanvasSize = UDim2.fromScale(0, 0),
 		ScrollingDirection = Enum.ScrollingDirection.Y,
 	})
 
-	local ColumnsContainer = New("Frame", {
+	local ColumnsHolder = New("Frame", {
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
-		Parent = ContainerFrame,
+		Parent = ContainerScroll,
 	}, {
-		New("UIPadding", {
-			PaddingRight = UDim.new(0, 10),
-			PaddingBottom = UDim.new(0, 12),
-		}),
-		New("UIListLayout", {
-			FillDirection = Enum.FillDirection.Horizontal,
-			Padding = UDim.new(0, 12),
-		}),
+		New("UIPadding", { PaddingRight = UDim.new(0, 10), PaddingBottom = UDim.new(0, 12) }),
+		New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 12) }),
 	})
 
-	-- Left and Right Columns
 	local LeftCol = New("Frame", {
 		Name = "LeftColumn",
 		Size = UDim2.new(0.5, -6, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
-		Parent = ColumnsContainer,
+		Parent = ColumnsHolder,
 	}, {
-		New("UIListLayout", {
-			Padding = UDim.new(0, 10),
-			SortOrder = Enum.SortOrder.LayoutOrder,
-		}),
+		New("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
 	})
 
 	local RightCol = New("Frame", {
@@ -1576,81 +1797,120 @@ function TabModule:New(Title, Icon, Parent)
 		Size = UDim2.new(0.5, -6, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
-		Parent = ColumnsContainer,
+		Parent = ColumnsHolder,
 	}, {
-		New("UIListLayout", {
-			Padding = UDim.new(0, 10),
-			SortOrder = Enum.SortOrder.LayoutOrder,
-		}),
+		New("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
 	})
 
-	AddSignal(ColumnsContainer:GetPropertyChangedSignal("AbsoluteContentSize"), function()
-		ContainerFrame.CanvasSize = UDim2.new(0, 0, 0, ColumnsContainer.AbsoluteContentSize.Y + 20)
+	AddSignal(ColumnsHolder:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+		ContainerScroll.CanvasSize = UDim2.new(0, 0, 0, ColumnsHolder.AbsoluteContentSize.Y + 20)
 	end)
 
-	AddSignal(Tab.Button.MouseButton1Click, function()
-		TabModule:SelectTab(TabIndex)
-	end)
+	local TabObj = {
+		Name = Title,
+		Index = TabIndex,
+		Button = TabBtn,
+		Container = LeftCol,
+		LeftColumn = LeftCol,
+		RightColumn = RightCol,
+		ScrollFrame = ContainerScroll,
+	}
 
-	TabModule.Tabs[TabIndex] = Tab
-	TabModule.Containers[TabIndex] = ContainerFrame
-
-	Tab.LeftColumn = LeftCol
-	Tab.RightColumn = RightCol
-	Tab.Container = LeftCol -- default to left column
-	Tab.ScrollFrame = ContainerFrame
-
-	-- Method to add card to specific column (Left / Right)
-	function Tab:AddCard(CardTitle, Config)
-		Config = Config or {}
-		local TargetCol = (Config.Column == "Right") and RightCol or LeftCol
-		local CardScope = { Container = TargetCol, ScrollFrame = ContainerFrame }
-		return Elements.AddCard(CardScope, CardTitle, Config)
-	end
-
-	-- Inherit base element methods
-	for Name, Func in pairs(Elements) do
-		Tab[Name] = function(selfRef, ...)
-			return Func(selfRef, ...)
+	-- Maclib Section: tab:Section({ Side = "Left" | "Right" })
+	function TabObj:Section(Settings)
+		Settings = Settings or {}
+		local TargetCol = (Settings.Side == "Right") and RightCol or LeftCol
+		local SectionScope = { Container = TargetCol, ScrollFrame = ContainerScroll }
+		for Name, Func in pairs(SectionElements) do
+			SectionScope[Name] = function(selfRef, ...) return Func(selfRef, ...) end
 		end
+		return SectionScope
 	end
 
-	return Tab
+	-- Fluent AddSection
+	function TabObj:AddSection(SectionTitle)
+		local SectionScope = TabObj:Section({ Side = "Left" })
+		SectionScope:Header({ Name = SectionTitle })
+		return SectionScope
+	end
+
+	function TabObj:AddCard(CardTitle, Config)
+		Config = Config or {}
+		local TargetCol = (Config.Column == "Right" or Config.Side == "Right") and RightCol or LeftCol
+		local Scope = { Container = TargetCol, ScrollFrame = ContainerScroll }
+		return SectionElements.CollapsibleCard(Scope, CardTitle, Config)
+	end
+
+	function TabObj:InsertConfigSection(Side)
+		local Section = TabObj:Section({ Side = Side or "Left" })
+		Section:Header({ Name = "Configuration" })
+		Section:Button({
+			Name = "Save Config",
+			Callback = function()
+				Window:Notify({ Title = "Configuration", Description = "Config saved successfully.", Lifetime = 3 })
+			end,
+		})
+		Section:Button({
+			Name = "Load Config",
+			Callback = function()
+				Window:Notify({ Title = "Configuration", Description = "Config loaded successfully.", Lifetime = 3 })
+			end,
+		})
+		return Section
+	end
+
+	function TabObj:Select()
+		TabManager:SelectTab(TabIndex)
+	end
+
+	for Name, Func in pairs(SectionElements) do
+		TabObj[Name] = function(selfRef, ...) return Func(selfRef, ...) end
+	end
+
+	AddSignal(TabBtn.MouseButton1Click, function()
+		TabObj:Select()
+	end)
+
+	table.insert(TabManager.Tabs, TabObj)
+	table.insert(TabManager.Containers, ContainerScroll)
+
+	return TabObj
 end
 
-function TabModule:SelectTab(Index)
-	local Window = TabModule.Window
-	TabModule.SelectedTab = Index
-
-	for TabIdx, TabObj in pairs(TabModule.Tabs) do
+function TabManager:SelectTab(Index)
+	TabManager.SelectedTab = Index
+	for TabIdx, TabObj in ipairs(TabManager.Tabs) do
 		if TabIdx == Index then
-			TabObj.Selected = true
 			Tween(TabObj.Button, 0.2, { BackgroundTransparency = 0.3 })
 		else
-			TabObj.Selected = false
 			Tween(TabObj.Button, 0.2, { BackgroundTransparency = 1 })
 		end
 	end
 
-	local CurrentTab = TabModule.Tabs[Index]
-	if CurrentTab then
-		Window.HeaderTabTitle.Text = CurrentTab.Name
-		for TabIdx, Container in pairs(TabModule.Containers) do
+	local Current = TabManager.Tabs[Index]
+	if Current and TabManager.Window then
+		TabManager.Window.HeaderTabTitle.Text = Current.Name
+		for TabIdx, Container in ipairs(TabManager.Containers) do
 			Container.Visible = (TabIdx == Index)
 		end
 	end
 end
 
 --------------------------------------------------------------------------------
--- Main Window Creation
+-- Main Window Creation (Maclib & Fluent Fused)
 --------------------------------------------------------------------------------
 
-function Library:CreateWindow(Config)
-	Config = Config or {}
-	local Title = Config.Title or "Mellow Hub"
-	local SubTitle = Config.SubTitle or "Version 1.2"
-	local WindowSize = Config.Size or UDim2.fromOffset(780, 520)
-	local TabWidth = Config.TabWidth or 170
+function Library:Window(Settings)
+	Settings = Settings or {}
+	local Title = Settings.Title or "Mellow Hub"
+	local Subtitle = Settings.Subtitle or Settings.SubTitle or "Version 2.0"
+	local WindowSize = Settings.Size or UDim2.fromOffset(868, 620)
+	local AcrylicBlur = (Settings.AcrylicBlur ~= false)
+	local ShowUserInfo = (Settings.ShowUserInfo ~= false)
+	local DisabledControls = Settings.DisabledWindowControls or {}
+
+	Library.MinimizeKey = Settings.Keybind or Enum.KeyCode.RightControl
+	Library.UseAcrylic = AcrylicBlur
 
 	local Viewport = GetViewportSize()
 	local InitialPos = UDim2.fromOffset(
@@ -1661,113 +1921,165 @@ function Library:CreateWindow(Config)
 	local Window = {
 		Size = WindowSize,
 		Position = InitialPos,
+		Settings = Settings,
 		Minimized = false,
 		Maximized = false,
+		GlobalSettingsList = {},
 	}
+	TabManager.Window = Window
 
-	local Paint = CreatePaint()
-	Window.Paint = Paint
-
-	-- macOS Traffic Light Buttons (Top-Left)
-	local TrafficLights = New("Frame", {
-		Size = UDim2.fromOffset(60, 24),
-		Position = UDim2.fromOffset(12, 12),
+	-- Window Background Paint
+	local WaveContour = New("ImageLabel", {
+		Name = "WaveContour",
+		Image = Assets.ContourWaves,
+		Size = UDim2.fromScale(1, 1),
+		ImageTransparency = 0.88,
+		ImageColor3 = Color3.fromRGB(104, 170, 208),
+		ScaleType = Enum.ScaleType.Crop,
 		BackgroundTransparency = 1,
-		ZIndex = 10,
+		ZIndex = 2,
+	}, { New("UICorner", { CornerRadius = UDim.new(0, 10) }) })
+
+	local WindowBackground = New("Frame", {
+		Name = "WindowBackground",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = AcrylicBlur and 0.12 or 0,
+		ZIndex = 1,
 	}, {
-		New("UIListLayout", {
-			FillDirection = Enum.FillDirection.Horizontal,
-			Padding = UDim.new(0, 6),
-			VerticalAlignment = Enum.VerticalAlignment.Center,
-		}),
-		-- Close (Red)
-		New("TextButton", {
-			Name = "CloseBtn",
-			Size = UDim2.fromOffset(12, 12),
-			BackgroundColor3 = Color3.fromRGB(255, 95, 86),
-			Text = "",
-		}, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) }),
-		-- Minimize (Yellow)
-		New("TextButton", {
-			Name = "MinBtn",
-			Size = UDim2.fromOffset(12, 12),
-			BackgroundColor3 = Color3.fromRGB(255, 189, 46),
-			Text = "",
-		}, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) }),
-		-- Maximize (Green)
-		New("TextButton", {
-			Name = "MaxBtn",
-			Size = UDim2.fromOffset(12, 12),
-			BackgroundColor3 = Color3.fromRGB(39, 201, 63),
-			Text = "",
-		}, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) }),
+		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
+		New("UIGradient", { Rotation = -45, ThemeTag = { Color = "BackgroundGradient" } }),
+		WaveContour,
 	})
 
-	-- Sidebar Hub Brand Header Box
-	local HubBrandCard = New("Frame", {
-		Size = UDim2.new(1, -20, 0, 56),
+	local PaintFrame = New("Frame", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		ZIndex = 1,
+	}, {
+		New("ImageLabel", {
+			Name = "DropShadow",
+			Image = Assets.Shadow,
+			ScaleType = Enum.ScaleType.Slice,
+			SliceCenter = Rect.new(99, 99, 99, 99),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Size = UDim2.new(1, 120, 1, 116),
+			Position = UDim2.fromScale(0.5, 0.5),
+			ImageColor3 = Color3.new(0, 0, 0),
+			ImageTransparency = 0.55,
+			ZIndex = 0,
+		}),
+		WindowBackground,
+		New("Frame", {
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+			ZIndex = 10,
+		}, {
+			New("UICorner", { CornerRadius = UDim.new(0, 10) }),
+			New("UIStroke", { Transparency = 0.45, Thickness = 1, ThemeTag = { Color = "WindowBorder" } }),
+		}),
+	})
+
+	-- Sidebar Layout
+	local SidebarWidth = 200
+
+	-- macOS Traffic Light Buttons
+	local CloseBtn = New("TextButton", {
+		Size = UDim2.fromOffset(12, 12),
+		BackgroundColor3 = Color3.fromRGB(250, 93, 86),
+		Text = "",
+	}, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+
+	local MinBtn = New("TextButton", {
+		Size = UDim2.fromOffset(12, 12),
+		BackgroundColor3 = Color3.fromRGB(252, 190, 57),
+		Text = "",
+	}, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+
+	local MaxBtn = New("TextButton", {
+		Size = UDim2.fromOffset(12, 12),
+		BackgroundColor3 = Color3.fromRGB(119, 174, 94),
+		Text = "",
+	}, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+
+	if table.find(DisabledControls, "Exit") then CloseBtn.BackgroundTransparency = 0.7 end
+	if table.find(DisabledControls, "Minimize") then MinBtn.BackgroundTransparency = 0.7 end
+	if table.find(DisabledControls, "Maximize") then MaxBtn.BackgroundTransparency = 0.7 end
+
+	local WindowControls = New("Frame", {
+		Size = UDim2.fromOffset(60, 24),
+		Position = UDim2.fromOffset(14, 12),
+		BackgroundTransparency = 1,
+		ZIndex = 12,
+	}, {
+		New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Center }),
+		CloseBtn,
+		MinBtn,
+		MaxBtn,
+	})
+
+	-- Hub Brand Card (Top of Sidebar)
+	local TitleLabel = New("TextLabel", {
+		Text = Title,
+		FontFace = Fonts.SemiBold,
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Position = UDim2.fromOffset(12, 8),
+		Size = UDim2.new(1, -24, 0, 16),
+		ThemeTag = { TextColor3 = "Text" },
+	})
+
+	local SubtitleLabel = New("TextLabel", {
+		Text = Subtitle,
+		FontFace = Fonts.Regular,
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Position = UDim2.fromOffset(12, 26),
+		Size = UDim2.new(1, -24, 0, 14),
+		ThemeTag = { TextColor3 = "SubText" },
+	})
+
+	local HubCard = New("Frame", {
+		Size = UDim2.new(1, -20, 0, 52),
 		Position = UDim2.fromOffset(10, 42),
-		BackgroundTransparency = 0.6,
-		ZIndex = 5,
-		ThemeTag = { BackgroundColor3 = "CardBackground" },
+		BackgroundTransparency = 0.5,
+		ZIndex = 6,
+		ThemeTag = { BackgroundColor3 = "SidebarBackground" },
 	}, {
 		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
-		New("UIStroke", { Transparency = 0.5, ThemeTag = { Color = "CardBorder" } }),
-		New("TextLabel", {
-			Text = Title,
-			FontFace = Fonts.SemiBold,
-			TextSize = 14,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			Position = UDim2.fromOffset(12, 10),
-			Size = UDim2.new(1, -24, 0, 16),
-			ThemeTag = { TextColor3 = "Text" },
-		}),
-		New("TextLabel", {
-			Text = SubTitle,
-			FontFace = Fonts.Regular,
-			TextSize = 12,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			Position = UDim2.fromOffset(12, 28),
-			Size = UDim2.new(1, -24, 0, 14),
-			ThemeTag = { TextColor3 = "SubText" },
-		}),
+		New("UIStroke", { Transparency = 0.55, ThemeTag = { Color = "SidebarBorder" } }),
+		TitleLabel,
+		SubtitleLabel,
 	})
 
-	-- Sidebar Tab List
+	-- Sidebar Tab Groups Holder
 	local TabHolder = New("ScrollingFrame", {
-		Size = UDim2.new(1, -16, 1, -190),
-		Position = UDim2.fromOffset(8, 108),
+		Size = UDim2.new(1, -16, 1, -180),
+		Position = UDim2.fromOffset(8, 104),
 		BackgroundTransparency = 1,
 		ScrollBarThickness = 0,
-		ZIndex = 5,
+		ZIndex = 6,
 	}, {
-		New("UIListLayout", {
-			Padding = UDim.new(0, 4),
-			SortOrder = Enum.SortOrder.LayoutOrder,
-		}),
+		New("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }),
 	})
 
-	-- User Profile Card (Bottom Left of Sidebar - Like in Screenshot)
-	local UserThumbnail = New("ImageLabel", {
-		Size = UDim2.fromOffset(36, 36),
-		Position = UDim2.fromOffset(8, 8),
-		Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150",
-		BackgroundTransparency = 0.5,
-		BackgroundColor3 = Color3.fromRGB(18, 30, 40),
-	}, {
-		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-	})
-
+	-- Sidebar User Info Card (Maclib style)
 	local UserProfileCard = New("Frame", {
 		Size = UDim2.new(1, -18, 0, 52),
 		Position = UDim2.new(0, 9, 1, -62),
 		BackgroundTransparency = 0.5,
+		Visible = ShowUserInfo,
 		ZIndex = 6,
-		ThemeTag = { BackgroundColor3 = "CardBackground" },
+		ThemeTag = { BackgroundColor3 = "SidebarBackground" },
 	}, {
 		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
-		New("UIStroke", { Transparency = 0.6, ThemeTag = { Color = "CardBorder" } }),
-		UserThumbnail,
+		New("UIStroke", { Transparency = 0.6, ThemeTag = { Color = "SidebarBorder" } }),
+		New("ImageLabel", {
+			Size = UDim2.fromOffset(36, 36),
+			Position = UDim2.fromOffset(8, 8),
+			Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150",
+			BackgroundTransparency = 0.5,
+			BackgroundColor3 = Color3.fromRGB(18, 30, 40),
+		}, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) }),
 		New("TextLabel", {
 			Text = LocalPlayer.DisplayName,
 			FontFace = Fonts.SemiBold,
@@ -1787,7 +2099,7 @@ function Library:CreateWindow(Config)
 			ThemeTag = { TextColor3 = "SubText" },
 		}),
 		New("TextLabel", {
-			Text = Config.UserRank or "Premium",
+			Text = Settings.UserRank or "Premium",
 			FontFace = Fonts.Medium,
 			TextSize = 10,
 			TextXAlignment = Enum.TextXAlignment.Left,
@@ -1799,17 +2111,24 @@ function Library:CreateWindow(Config)
 
 	local Sidebar = New("Frame", {
 		Name = "Sidebar",
-		Size = UDim2.new(0, TabWidth, 1, 0),
+		Size = UDim2.new(0, SidebarWidth, 1, 0),
 		BackgroundTransparency = 1,
 		ZIndex = 5,
 	}, {
-		TrafficLights,
-		HubBrandCard,
+		WindowControls,
+		HubCard,
 		TabHolder,
 		UserProfileCard,
+		New("Frame", {
+			Name = "SidebarDivider",
+			Size = UDim2.new(0, 1, 1, 0),
+			Position = UDim2.new(1, -1, 0, 0),
+			BackgroundTransparency = 0.5,
+			ThemeTag = { BackgroundColor3 = "SidebarBorder" },
+		}),
 	})
 
-	-- Header Bar with Search Input & Active Tab Title
+	-- Header Controls: Search Bar, Tab Title, and Global Settings Menu
 	local SearchBox = New("TextBox", {
 		Text = "",
 		PlaceholderText = "Search...",
@@ -1824,8 +2143,8 @@ function Library:CreateWindow(Config)
 	})
 
 	local SearchBarFrame = New("Frame", {
-		Size = UDim2.fromOffset(210, 30),
-		Position = UDim2.fromOffset(TabWidth + 14, 12),
+		Size = UDim2.fromOffset(200, 30),
+		Position = UDim2.fromOffset(SidebarWidth + 14, 12),
 		BackgroundColor3 = Color3.fromRGB(15, 28, 38),
 		BackgroundTransparency = 0.4,
 		ZIndex = 8,
@@ -1846,7 +2165,7 @@ function Library:CreateWindow(Config)
 		FontFace = Fonts.SemiBold,
 		TextSize = 15,
 		TextXAlignment = Enum.TextXAlignment.Center,
-		Position = UDim2.new(0.5, TabWidth / 2, 0, 16),
+		Position = UDim2.new(0.5, SidebarWidth / 2, 0, 16),
 		Size = UDim2.fromOffset(160, 20),
 		AnchorPoint = Vector2.new(0.5, 0),
 		ZIndex = 8,
@@ -1854,10 +2173,56 @@ function Library:CreateWindow(Config)
 	})
 	Window.HeaderTabTitle = HeaderTabTitle
 
+	-- Global Settings Dropdown Flyout (Maclib Window:GlobalSetting)
+	local GlobalSettingsDropdown = New("Frame", {
+		Name = "GlobalSettingsDropdown",
+		Size = UDim2.fromOffset(220, 0),
+		Position = UDim2.new(1, -240, 0, 48),
+		BackgroundColor3 = Color3.fromRGB(15, 27, 36),
+		BackgroundTransparency = 0.1,
+		Visible = false,
+		ClipsDescendants = true,
+		ZIndex = 50,
+	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
+		New("UIStroke", { Transparency = 0.5, ThemeTag = { Color = "WindowBorder" } }),
+		New("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }),
+		New("UIPadding", { PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }),
+	})
+
+	local SettingsButton = New("TextButton", {
+		Size = UDim2.fromOffset(30, 30),
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -14, 0, 12),
+		BackgroundColor3 = Color3.fromRGB(18, 32, 42),
+		BackgroundTransparency = 0.4,
+		Text = "",
+		ZIndex = 12,
+	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
+		New("UIStroke", { Transparency = 0.55, ThemeTag = { Color = "InElementBorder" } }),
+		New("ImageLabel", {
+			Image = Assets.Sliders,
+			Size = UDim2.fromOffset(16, 16),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			ThemeTag = { ImageColor3 = "Text" },
+		}),
+	})
+
+	AddSignal(SettingsButton.MouseButton1Click, function()
+		GlobalSettingsDropdown.Visible = not GlobalSettingsDropdown.Visible
+		if GlobalSettingsDropdown.Visible then
+			local Height = #Window.GlobalSettingsList * 34 + 16
+			Tween(GlobalSettingsDropdown, 0.2, { Size = UDim2.fromOffset(220, Height) })
+		end
+	end)
+
 	-- Content Area
 	local ContainerHolder = New("Frame", {
-		Size = UDim2.new(1, -TabWidth - 24, 1, -64),
-		Position = UDim2.fromOffset(TabWidth + 14, 52),
+		Name = "ContainerHolder",
+		Size = UDim2.new(1, -SidebarWidth - 24, 1, -60),
+		Position = UDim2.fromOffset(SidebarWidth + 14, 50),
 		BackgroundTransparency = 1,
 		ZIndex = 6,
 	})
@@ -1865,47 +2230,34 @@ function Library:CreateWindow(Config)
 
 	-- Window Root Frame
 	Window.Root = New("Frame", {
-		Name = "MellowHubWindow",
+		Name = "MacLibWindow",
 		Size = Window.Size,
 		Position = Window.Position,
 		BackgroundTransparency = 1,
 		Parent = Library.GUI,
 	}, {
-		Paint.Frame,
+		PaintFrame,
 		Sidebar,
 		SearchBarFrame,
 		HeaderTabTitle,
+		SettingsButton,
+		GlobalSettingsDropdown,
 		ContainerHolder,
 	})
 
-	-- Enable Acrylic Blur
-	if Library.UseAcrylic then
+	-- Acrylic Blur Hook
+	if AcrylicBlur then
 		AcrylicEngine:SetEnabled(true)
-		AddSignal(Window.Root:GetPropertyChangedSignal("AbsolutePosition"), function()
-			AcrylicEngine:Sync(Window.Root)
-		end)
-		AddSignal(Window.Root:GetPropertyChangedSignal("AbsoluteSize"), function()
-			AcrylicEngine:Sync(Window.Root)
-		end)
+		AddSignal(Window.Root:GetPropertyChangedSignal("AbsolutePosition"), function() AcrylicEngine:Sync(Window.Root) end)
+		AddSignal(Window.Root:GetPropertyChangedSignal("AbsoluteSize"), function() AcrylicEngine:Sync(Window.Root) end)
 		AcrylicEngine:Sync(Window.Root)
 	end
 
-	-- Traffic light actions
-	AddSignal(TrafficLights.CloseBtn.MouseButton1Click, function()
-		Library:Destroy()
-	end)
-	AddSignal(TrafficLights.MinBtn.MouseButton1Click, function()
-		Window:Minimize()
-	end)
-	AddSignal(TrafficLights.MaxBtn.MouseButton1Click, function()
-		Window:Maximize()
-	end)
-
-	-- Window Dragging
+	-- Window Dragging (Maclib style)
 	local Dragging = false
 	local DragStart, StartPos
 	AddSignal(Window.Root.InputBegan, function(Input)
-		if IsClickInput(Input) and Input.Position.Y - Window.Root.AbsolutePosition.Y < 46 then
+		if IsClickInput(Input) and Input.Position.Y - Window.Root.AbsolutePosition.Y < 44 then
 			Dragging = true
 			DragStart = Input.Position
 			StartPos = Window.Root.Position
@@ -1924,12 +2276,36 @@ function Library:CreateWindow(Config)
 		if IsClickInput(Input) then Dragging = false end
 	end)
 
-	function Window:Minimize()
-		Window.Minimized = not Window.Minimized
-		Window.Root.Visible = not Window.Minimized
+	-- Window Controls Handlers
+	AddSignal(CloseBtn.MouseButton1Click, function()
+		Window:Unload()
+	end)
+	AddSignal(MinBtn.MouseButton1Click, function()
+		Window:SetState(not Window.Minimized)
+	end)
+	AddSignal(MaxBtn.MouseButton1Click, function()
+		Window:Maximize()
+	end)
+
+	-- Window Public Functions (Maclib & Fluent Fused)
+	function Window:UpdateTitle(NewTitle)
+		TitleLabel.Text = NewTitle
+	end
+
+	function Window:UpdateSubtitle(NewSubtitle)
+		SubtitleLabel.Text = NewSubtitle
+	end
+
+	function Window:SetState(State)
+		Window.Minimized = State
+		Window.Root.Visible = not State
 		if AcrylicEngine.Model then
-			AcrylicEngine.Model.Transparency = Window.Minimized and 1 or 0.98
+			AcrylicEngine.Model.Transparency = State and 1 or 0.98
 		end
+	end
+
+	function Window:GetState()
+		return not Window.Minimized
 	end
 
 	function Window:Maximize()
@@ -1942,23 +2318,128 @@ function Library:CreateWindow(Config)
 		end
 	end
 
-	-- Tab Manager
-	local TabHandler = TabModule:Init(Window)
-
-	function Window:AddTab(TabConfig)
-		assert(TabConfig.Title, "AddTab - Missing Title")
-		return TabHandler:New(TabConfig.Title, TabConfig.Icon, TabHolder)
+	function Window:SetAcrylicBlurState(State)
+		Library.UseAcrylic = State
+		AcrylicEngine:SetEnabled(State)
 	end
 
+	function Window:GetAcrylicBlurState()
+		return AcrylicEngine.Enabled
+	end
+
+	function Window:SetNotificationsState(State)
+		Library.NotificationsEnabled = State
+	end
+
+	function Window:GetNotificationsState()
+		return Library.NotificationsEnabled
+	end
+
+	function Window:SetUserInfoState(State)
+		Library.ShowUserInfo = State
+		UserProfileCard.Visible = State
+	end
+
+	function Window:GetUserInfoState()
+		return Library.ShowUserInfo
+	end
+
+	function Window:SetKeybind(Keycode)
+		Library.MinimizeKey = Keycode
+	end
+
+	function Window:SetSize(Size)
+		Window.Size = Size
+		Window.Root.Size = Size
+	end
+
+	function Window:GetSize()
+		return Window.Root.Size
+	end
+
+	function Window:Unload()
+		Library:Destroy()
+	end
+
+	function Window.onUnloaded(Callback)
+		table.insert(Library.onUnloadedCallbacks, Callback)
+	end
+
+	function Window:Notify(Config)
+		return Library:Notify(Config)
+	end
+
+	function Window:Dialog(Config)
+		Dialog:Create(Window.Root, Config)
+	end
+
+	-- Global Settings item: Window:GlobalSetting({ Name, Default, Callback })
+	function Window:GlobalSetting(SettingConfig)
+		local Name = SettingConfig.Name or "Setting"
+		local State = SettingConfig.Default or false
+
+		local ToggleBtn = New("TextButton", {
+			Size = UDim2.new(1, 0, 0, 30),
+			BackgroundColor3 = Color3.fromRGB(20, 34, 46),
+			BackgroundTransparency = 0.6,
+			Text = "",
+			Parent = GlobalSettingsDropdown,
+		}, {
+			New("UICorner", { CornerRadius = UDim.new(0, 5) }),
+			New("TextLabel", {
+				Text = Name,
+				FontFace = Fonts.Medium,
+				TextSize = 12,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				Position = UDim2.fromOffset(8, 0),
+				Size = UDim2.new(1, -40, 1, 0),
+				ThemeTag = { TextColor3 = "Text" },
+			}),
+			New("Frame", {
+				Name = "StatusDot",
+				Size = UDim2.fromOffset(8, 8),
+				AnchorPoint = Vector2.new(1, 0.5),
+				Position = UDim2.new(1, -8, 0.5, 0),
+				BackgroundColor3 = State and Color3.fromRGB(52, 211, 153) or Color3.fromRGB(80, 80, 80),
+			}, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) }),
+		})
+
+		AddSignal(ToggleBtn.MouseButton1Click, function()
+			State = not State
+			ToggleBtn.StatusDot.BackgroundColor3 = State and Color3.fromRGB(52, 211, 153) or Color3.fromRGB(80, 80, 80)
+			if SettingConfig.Callback then
+				Library:SafeCallback(SettingConfig.Callback, State)
+			end
+		end)
+
+		table.insert(Window.GlobalSettingsList, ToggleBtn)
+		return State
+	end
+
+	-- Maclib TabGroup: local tabGroups = { TabGroup1 = Window:TabGroup() }
+	function Window:TabGroup()
+		local TabGroupObj = {}
+		function TabGroupObj:Tab(TabSettings)
+			return CreateTabObject(Window, TabSettings.Name or TabSettings.Title or "Tab", TabSettings.Image or TabSettings.Icon, TabHolder)
+		end
+		return TabGroupObj
+	end
+
+	-- Shortcut: Window:Tab / Window:AddTab
+	function Window:Tab(TabSettings)
+		return CreateTabObject(Window, TabSettings.Name or TabSettings.Title or "Tab", TabSettings.Image or TabSettings.Icon, TabHolder)
+	end
+	Window.AddTab = Window.Tab
+
 	function Window:SelectTab(Index)
-		TabHandler:SelectTab(Index or 1)
+		TabManager:SelectTab(Index or 1)
 	end
 
 	-- Keybind toggle listener
 	AddSignal(UserInputService.InputBegan, function(Input, Processed)
 		if Processed or UserInputService:GetFocusedTextBox() then return end
 		if Input.KeyCode == Library.MinimizeKey then
-			Window:Minimize()
+			Window:SetState(not Window.Minimized)
 		end
 	end)
 
@@ -1967,9 +2448,32 @@ function Library:CreateWindow(Config)
 	return Window
 end
 
+-- Aliases for library entry
+Library.CreateWindow = Library.Window
+
 --------------------------------------------------------------------------------
--- Library Controls
+-- Config / SaveManager Compatibility (Maclib & Fluent Fused)
 --------------------------------------------------------------------------------
+
+local SaveFolder = "MellowHub"
+
+function Library:SetFolder(Folder)
+	SaveFolder = Folder
+end
+
+function Library:LoadAutoLoadConfig()
+	-- Handled smoothly if executor provides writefile / readfile
+	if isfile and isfile(SaveFolder .. "/autoload.txt") then
+		pcall(function()
+			local Name = readfile(SaveFolder .. "/autoload.txt")
+			Library:Notify({
+				Title = "Configuration",
+				Description = "Loaded autoload profile: " .. tostring(Name),
+				Lifetime = 4,
+			})
+		end)
+	end
+end
 
 function Library:SetTheme(ThemeName)
 	if Library.ThemeData[ThemeName] then
@@ -1978,15 +2482,11 @@ function Library:SetTheme(ThemeName)
 	end
 end
 
-function Library:ToggleAcrylic(Value)
-	Library.UseAcrylic = not not Value
-	AcrylicEngine:SetEnabled(Library.UseAcrylic)
-end
-
 function Library:Destroy()
 	Library.Unloaded = true
 	AcrylicEngine:SetEnabled(false)
 	if AcrylicEngine.Folder then AcrylicEngine.Folder:Destroy() end
+	for _, Cb in ipairs(Library.onUnloadedCallbacks) do pcall(Cb) end
 	Creator.Disconnect()
 	if Library.GUI then Library.GUI:Destroy() end
 end
